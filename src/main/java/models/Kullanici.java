@@ -3,6 +3,7 @@ package models;
 import interfaces.IKullanici;
 import interfaces.IVeriYonetimi;
 import java.io.*;
+import java.util.HashMap;
 
 public abstract class Kullanici implements IKullanici, IVeriYonetimi {
     protected String ad;
@@ -58,11 +59,31 @@ public abstract class Kullanici implements IKullanici, IVeriYonetimi {
             if (!dosya.exists()) {
                 dosya.createNewFile();
             }
-            // Dosyayı her seferinde üzerine yazarak güncelleme
-            try (PrintWriter writer = new PrintWriter(new FileWriter(DOSYA_YOLU))) {
-                writer.println(String.format("%s,%s,%s,%s,%s", 
-                    getClass().getSimpleName(), ad, soyad, kullaniciAdi, sifre));
+            
+            // Önce mevcut kullanıcıları oku
+            HashMap<String, String> mevcutKullanicilar = new HashMap<>();
+            try (BufferedReader reader = new BufferedReader(new FileReader(DOSYA_YOLU))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] veriler = line.split(",");
+                    if (veriler.length >= 4) {
+                        mevcutKullanicilar.put(veriler[3], line);
+                    }
+                }
             }
+            
+            // Bu kullanıcının bilgilerini güncelle veya ekle
+            String sinifTipi = this.getClass().getSimpleName();
+            mevcutKullanicilar.put(this.kullaniciAdi, 
+                String.format("%s,%s,%s,%s,%s", sinifTipi, ad, soyad, kullaniciAdi, sifre));
+            
+            // Tüm kullanıcıları tekrar yaz
+            try (PrintWriter writer = new PrintWriter(new FileWriter(DOSYA_YOLU))) {
+                for (String kayit : mevcutKullanicilar.values()) {
+                    writer.println(kayit);
+                }
+            }
+            
         } catch (IOException e) {
             System.err.println("Veri kaydedilemedi: " + e.getMessage());
         }

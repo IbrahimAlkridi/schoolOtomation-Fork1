@@ -1,0 +1,4 @@
+2024-12-29T14:37:55.340918: Yeni öğrenci kaydedildi: 101
+2024-12-29T14:38:18.909397: Yeni ders açıldı: 1 - bilgisayar ağları
+2024-12-29T14:41:50.929523: Yeni öğrenci kaydedildi: 2023002
+2024-12-29T14:45:57.529367: Yeni öğrenci kaydedildi: 10001

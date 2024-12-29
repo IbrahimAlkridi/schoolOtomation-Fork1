@@ -12,40 +12,60 @@ public class OgrenciIsleriOtomasyonu {
     private static JTextArea logArea;
 
     public static void main(String[] args) {
-        // Dosyaları oluştur
-        createFiles();
-        kullanicilariYukle();
-        
-        if (kullanicilar.isEmpty()) {
-            // Örnek kullanıcılar oluştur
-            Ogrenci ogrenci = new Ogrenci("Ali", "Yılmaz", "ali", "1234", "2023001");
-            OgretimUyesi ogretimUyesi = new OgretimUyesi("Ayşe", "Demir", "ayse", "1234", "Dr.");
-            Personel personel = new Personel("Mehmet", "Kaya", "admin", "admin", "P001", "Öğrenci İşleri");
+        SwingUtilities.invokeLater(() -> {
+            createAndShowGUI();
+            // GUI oluşturulduktan sonra dosya işlemlerini yap
+            createFiles();
+            kullanicilariYukle();
             
-            kullanicilar.put(ogrenci.getKullaniciAdi(), ogrenci);
-            kullanicilar.put(ogretimUyesi.getKullaniciAdi(), ogretimUyesi);
-            kullanicilar.put(personel.getKullaniciAdi(), personel);
+            if (kullanicilar.isEmpty()) {
+                // Örnek kullanıcılar oluştur
+                Ogrenci ogrenci = new Ogrenci("Ali", "Yılmaz", "ogr_2023001", "2023001", "2023001");
+                OgretimUyesi ogretimUyesi = new OgretimUyesi("Ayşe", "Demir", "hoca_1001", "1001", "Dr.");
+                Personel personel = new Personel("Mehmet", "Kaya", "per_admin", "admin", "P001", "Öğrenci İşleri");
+                
+                // Kullanıcıları HashMap'e ekle
+                kullanicilar.put("ogr_2023001", ogrenci);
+                kullanicilar.put("hoca_1001", ogretimUyesi);
+                kullanicilar.put("per_admin", personel);
 
-            // İlk kullanıcıları kaydet
-            ogrenci.verileriKaydet();
-            ogretimUyesi.verileriKaydet();
-            personel.verileriKaydet();
-        }
-
-        SwingUtilities.invokeLater(() -> createAndShowGUI());
+                // Kullanıcıları dosyaya kaydet
+                ogrenci.verileriKaydet();
+                ogretimUyesi.verileriKaydet();
+                personel.verileriKaydet();
+                
+                logToScreen("Örnek kullanıcılar oluşturuldu.");
+            }
+        });
     }
 
     private static void createFiles() {
-        String[] dosyalar = {"kullanicilar.txt", "ogrenciler.txt", "ogretim_uyesi.txt"};
+        String[] dosyalar = {
+            "kullanicilar.txt", 
+            "ogrenciler.txt", 
+            "ogretim_uyesi.txt",
+            "personel.txt",
+            "mesajlar.txt",
+            "islem_log.txt"
+        };
+        
         for (String dosya : dosyalar) {
             try {
                 File file = new File(dosya);
                 if (!file.exists()) {
                     file.createNewFile();
+                    logToScreen(dosya + " dosyası oluşturuldu.");
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                logToScreen("Dosya oluşturma hatası: " + e.getMessage());
             }
+        }
+        
+        // Materyaller klasörünü oluştur
+        File materyallerDir = new File("materyaller");
+        if (!materyallerDir.exists()) {
+            materyallerDir.mkdir();
+            logToScreen("materyaller klasörü oluşturuldu.");
         }
     }
 
@@ -61,15 +81,27 @@ public class OgrenciIsleriOtomasyonu {
                     String kullaniciAdi = veriler[3];
                     String sifre = veriler[4];
 
-                    Kullanici kullanici;
-                    if (tip.equals("Ogrenci")) {
-                        kullanici = new Ogrenci(ad, soyad, kullaniciAdi, sifre, "2023" + kullaniciAdi);
-                    } else if (tip.equals("OgretimUyesi")) {
-                        kullanici = new OgretimUyesi(ad, soyad, kullaniciAdi, sifre, "Dr.");
-                    } else {
-                        continue;
+                    Kullanici kullanici = null;
+                    switch (tip) {
+                        case "Ogrenci":
+                            kullanici = new Ogrenci(ad, soyad, kullaniciAdi, sifre, kullaniciAdi.replace("ogr_", ""));
+                            break;
+                        case "OgretimUyesi":
+                            kullanici = new OgretimUyesi(ad, soyad, kullaniciAdi, sifre, "Dr.");
+                            break;
+                        case "Personel":
+                            if (veriler.length >= 6) {
+                                String departman = veriler[5];
+                                kullanici = new Personel(ad, soyad, kullaniciAdi, sifre, 
+                                    kullaniciAdi.replace("per_", ""), departman);
+                            }
+                            break;
                     }
-                    kullanicilar.put(kullaniciAdi, kullanici);
+                    
+                    if (kullanici != null) {
+                        kullanicilar.put(kullaniciAdi, kullanici);
+                        logToScreen("Kullanıcı yüklendi: " + kullaniciAdi);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -100,37 +132,124 @@ public class OgrenciIsleriOtomasyonu {
     }
 
     private static void showLoginPanel() {
+        // Her login paneli gösterildiğinde kullanıcıları yeniden yükle
+        kullanicilar.clear();
+        kullanicilariYukle();
+
         JPanel loginPanel = new JPanel();
         loginPanel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
+        
+        // Kullanıcı tipi seçimi için ComboBox
+        String[] kullaniciTipleri = {"Öğrenci", "Öğretim Üyesi", "Personel"};
+        JComboBox<String> kullaniciTipiCombo = new JComboBox<>(kullaniciTipleri);
         
         JTextField kullaniciAdiField = new JTextField(20);
         JPasswordField sifreField = new JPasswordField(20);
         JButton girisButton = new JButton("Giriş Yap");
 
         gbc.gridx = 0; gbc.gridy = 0;
+        loginPanel.add(new JLabel("Kullanıcı Tipi:"), gbc);
+        gbc.gridx = 1;
+        loginPanel.add(kullaniciTipiCombo, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1;
         loginPanel.add(new JLabel("Kullanıcı Adı:"), gbc);
         gbc.gridx = 1;
         loginPanel.add(kullaniciAdiField, gbc);
-        gbc.gridx = 0; gbc.gridy = 1;
+        
+        gbc.gridx = 0; gbc.gridy = 2;
         loginPanel.add(new JLabel("Şifre:"), gbc);
         gbc.gridx = 1;
         loginPanel.add(sifreField, gbc);
-        gbc.gridx = 1; gbc.gridy = 2;
+        
+        gbc.gridx = 1; gbc.gridy = 3;
         loginPanel.add(girisButton, gbc);
 
+        // Kullanıcı tipine göre kullanıcı adı alanını güncelle
+        kullaniciTipiCombo.addActionListener(e -> {
+            String tip = (String) kullaniciTipiCombo.getSelectedItem();
+            switch (tip) {
+                case "Öğrenci":
+                    kullaniciAdiField.setToolTipText("Örnek: ogr_2023001");
+                    break;
+                case "Öğretim Üyesi":
+                    kullaniciAdiField.setToolTipText("Örnek: hoca_sicilno");
+                    break;
+                case "Personel":
+                    kullaniciAdiField.setToolTipText("Örnek: per_personelno");
+                    break;
+            }
+        });
+
         girisButton.addActionListener(e -> {
+            // Giriş denemesi öncesi kullanıcıları tekrar yükle
+            kullanicilar.clear();
+            kullanicilariYukle();
+            
             String kullaniciAdi = kullaniciAdiField.getText();
             String sifre = new String(sifreField.getPassword());
+            String secilenTip = (String) kullaniciTipiCombo.getSelectedItem();
+            
+            System.out.println("Giriş denemesi: " + kullaniciAdi); // Debug için
+            System.out.println("Mevcut kullanıcılar: " + kullanicilar.keySet()); // Debug için
             
             Kullanici kullanici = kullanicilar.get(kullaniciAdi);
-            if (kullanici != null && kullanici.girisYap(kullaniciAdi, sifre)) {
-                aktifKullanici = kullanici;
-                showMainMenu();
+            if (kullanici != null) {
+                // Kullanıcı tipini kontrol et
+                boolean tipUygun = false;
+                switch (secilenTip) {
+                    case "Öğrenci":
+                        tipUygun = kullanici instanceof Ogrenci;
+                        break;
+                    case "Öğretim Üyesi":
+                        tipUygun = kullanici instanceof OgretimUyesi;
+                        break;
+                    case "Personel":
+                        tipUygun = kullanici instanceof Personel;
+                        break;
+                }
+                
+                if (tipUygun && kullanici.girisYap(kullaniciAdi, sifre)) {
+                    aktifKullanici = kullanici;
+                    logToScreen(secilenTip + " girişi başarılı: " + kullaniciAdi);
+                    showMainMenu();
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Hatalı kullanıcı tipi, kullanıcı adı veya şifre!");
+                }
             } else {
-                JOptionPane.showMessageDialog(frame, "Hatalı kullanıcı adı veya şifre!");
+                JOptionPane.showMessageDialog(frame, "Kullanıcı bulunamadı!");
             }
+        });
+
+        // Yardım butonu ekle
+        JButton yardimButton = new JButton("Yardım");
+        gbc.gridx = 1; gbc.gridy = 4;
+        loginPanel.add(yardimButton, gbc);
+        
+        yardimButton.addActionListener(e -> {
+            String yardimMesaji = """
+                Kullanıcı Girişi Hakkında:
+                
+                Öğrenci Girişi:
+                - Kullanıcı adı formatı: ogr_ogrencino
+                - Şifre: İlk girişte öğrenci numarası
+                
+                Öğretim Üyesi Girişi:
+                - Kullanıcı adı formatı: hoca_sicilno
+                - Şifre: İlk girişte sicil numarası
+                
+                Personel Girişi:
+                - Kullanıcı adı formatı: per_personelno
+                - Şifre: İlk girişte personel numarası
+                
+                Örnek Hesaplar:
+                Öğrenci: ogr_2023001/2023001
+                Öğretim Üyesi: hoca_1001/1001
+                Personel: per_admin/admin
+                """;
+            JOptionPane.showMessageDialog(frame, yardimMesaji, "Giriş Yardımı", JOptionPane.INFORMATION_MESSAGE);
         });
 
         panel.removeAll();

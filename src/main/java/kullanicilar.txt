@@ -1,0 +1,6 @@
+Ogrenci,ismail,arat,ogr_101,101
+Ogrenci,ahmet,mansız,ogr_2023002,2023002
+Ogrenci,Ali,Yılmaz,ogr_2023001,2023001
+OgretimUyesi,Ayşe,Demir,hoca_1001,1001
+Ogrenci,zeliha,buran,ogr_10001,10001
+Personel,Mehmet,Kaya,per_admin,admin,Öğrenci İşleri

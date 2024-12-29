@@ -52,8 +52,8 @@ public class Personel extends Kullanici {
     }
 
     public void ogretimUyesiKaydet(String ad, String soyad, String sicilNo, String unvan) {
-        String kullaniciAdi = "ogr_" + sicilNo;
-        String sifre = sicilNo; // İlk şifre sicil numarası olsun
+        String kullaniciAdi = "hoca_" + sicilNo;
+        String sifre = sicilNo;
         OgretimUyesi yeniOgretimUyesi = new OgretimUyesi(ad, soyad, kullaniciAdi, sifre, unvan);
         yeniOgretimUyesi.verileriKaydet();
         logIslem("Yeni öğretim üyesi kaydedildi: " + sicilNo);
@@ -144,7 +144,42 @@ public class Personel extends Kullanici {
 
     @Override
     public void verileriKaydet() {
-        super.verileriKaydet();
+        // Önce temel kullanıcı bilgilerini kaydet
+        File dosya = new File(DOSYA_YOLU);
+        try {
+            if (!dosya.exists()) {
+                dosya.createNewFile();
+            }
+            
+            // Önce mevcut kullanıcıları oku
+            HashMap<String, String> mevcutKullanicilar = new HashMap<>();
+            try (BufferedReader reader = new BufferedReader(new FileReader(DOSYA_YOLU))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] veriler = line.split(",");
+                    if (veriler.length >= 4) {
+                        mevcutKullanicilar.put(veriler[3], line);
+                    }
+                }
+            }
+            
+            // Bu kullanıcının bilgilerini güncelle veya ekle
+            String sinifTipi = this.getClass().getSimpleName();
+            mevcutKullanicilar.put(this.kullaniciAdi, 
+                String.format("%s,%s,%s,%s,%s,%s", sinifTipi, ad, soyad, kullaniciAdi, sifre, departman));
+            
+            // Tüm kullanıcıları tekrar yaz
+            try (PrintWriter writer = new PrintWriter(new FileWriter(DOSYA_YOLU))) {
+                for (String kayit : mevcutKullanicilar.values()) {
+                    writer.println(kayit);
+                }
+            }
+            
+        } catch (IOException e) {
+            System.err.println("Veri kaydedilemedi: " + e.getMessage());
+        }
+
+        // Personel-spesifik bilgileri kaydet
         try (PrintWriter writer = new PrintWriter(new FileWriter(PERSONEL_DOSYA))) {
             writer.println(String.format("%s,%s,%s", personelNo, departman, 
                 String.join(";", dersKayitlari.keySet())));

@@ -178,47 +178,66 @@ public class OgretimUyesi extends Kullanici implements IAkademikIslemler {
             String line;
             Sinav currentSinav = null;
             
-            while ((line = reader.readLine()) != null) {
+            while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 String[] veriler = line.split(",");
-                if (veriler[0].equals(this.unvan)) {
-                    if (veriler.length > 1) {
-                        String[] dersler = veriler[1].split(";");
-                        for (String ders : dersler) {
-                            if (!ders.isEmpty()) {
-                                verdigiDersler.add(ders);
-                                dersiAlanOgrenciler.put(ders, new ArrayList<>());
+                if (veriler.length == 0) continue;
+                
+                switch (veriler[0]) {
+                    case "SINAV":
+                        if (veriler.length >= 4) {
+                            String ders = veriler[1];
+                            if (!sinavlar.containsKey(ders)) {
+                                sinavlar.put(ders, new ArrayList<>());
+                            }
+                            currentSinav = new Sinav(ders, veriler[2], veriler[3]);
+                            sinavlar.get(ders).add(currentSinav);
+                        }
+                        break;
+                    case "NOT":
+                        if (veriler.length >= 3 && currentSinav != null) {
+                            currentSinav.notlar.put(veriler[1], Double.parseDouble(veriler[2]));
+                        }
+                        break;
+                    case "DEVAMSIZLIK":
+                        if (veriler.length >= 4) {
+                            String ders = veriler[1];
+                            String ogrenci = veriler[2];
+                            int devamsizlik = Integer.parseInt(veriler[3]);
+                            if (!devamsizliklar.containsKey(ders)) {
                                 devamsizliklar.put(ders, new HashMap<>());
                             }
+                            devamsizliklar.get(ders).put(ogrenci, devamsizlik);
                         }
-                    }
-                } else if (veriler[0].equals("SINAV")) {
-                    String ders = veriler[1];
-                    if (!sinavlar.containsKey(ders)) {
-                        sinavlar.put(ders, new ArrayList<>());
-                    }
-                    currentSinav = new Sinav(ders, veriler[2], veriler[3]);
-                    sinavlar.get(ders).add(currentSinav);
-                } else if (veriler[0].equals("NOT") && currentSinav != null) {
-                    currentSinav.notlar.put(veriler[1], Double.parseDouble(veriler[2]));
-                } else if (veriler[0].equals("DEVAMSIZLIK")) {
-                    String ders = veriler[1];
-                    String ogrenci = veriler[2];
-                    int devamsizlik = Integer.parseInt(veriler[3]);
-                    if (!devamsizliklar.containsKey(ders)) {
-                        devamsizliklar.put(ders, new HashMap<>());
-                    }
-                    devamsizliklar.get(ders).put(ogrenci, devamsizlik);
-                } else if (veriler[0].equals("DANISMAN")) {
-                    String[] ogrenciler = veriler[1].split(";");
-                    for (String ogrenci : ogrenciler) {
-                        if (!ogrenci.isEmpty()) {
-                            danismanlikOgrencileri.add(ogrenci);
+                        break;
+                    case "DANISMAN":
+                        if (veriler.length >= 2) {
+                            String[] ogrenciler = veriler[1].split(";");
+                            for (String ogrenci : ogrenciler) {
+                                if (!ogrenci.isEmpty()) {
+                                    danismanlikOgrencileri.add(ogrenci);
+                                }
+                            }
                         }
-                    }
+                        break;
+                    default:
+                        // İlk satır - temel bilgiler
+                        if (veriler.length >= 2) {
+                            String[] dersler = veriler[1].split(";");
+                            for (String ders : dersler) {
+                                if (!ders.isEmpty()) {
+                                    verdigiDersler.add(ders);
+                                    dersiAlanOgrenciler.put(ders, new ArrayList<>());
+                                    devamsizliklar.put(ders, new HashMap<>());
+                                }
+                            }
+                        }
+                        break;
                 }
             }
         } catch (IOException e) {
             System.err.println("Öğretim üyesi verisi okunamadı: " + e.getMessage());
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            System.err.println("Dosya formatı hatalı: " + e.getMessage());
         }
     }
 } 
